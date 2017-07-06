@@ -4,8 +4,6 @@ version := "git describe --tags --dirty --always".!!.stripPrefix("v").trim
 
 scalaVersion := "2.11.11"
 
-crossScalaVersions := Seq(scalaVersion.value, "2.10.6")
-
 libraryDependencies ++= Seq(
   "com.gilt" %% "gfc-logging" % "0.0.8",
   "com.gilt" %% "gfc-concurrent" % "0.3.6",
