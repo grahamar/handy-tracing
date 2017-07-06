@@ -1,41 +1,46 @@
-package io.grhodes.handy.tracing.play.filter
+package io.grhodes.handy.tracing.xray
 
 import javax.inject.Inject
 
 import akka.util.ByteString
-import com.amazonaws.xray.{AWSXRay, ThreadLocalStorage}
 import com.amazonaws.xray.entities.TraceHeader.SampleDecision
 import com.amazonaws.xray.entities.{Segment, TraceHeader, TraceID}
-import com.gilt.gfc.logging.Loggable
+import com.amazonaws.xray.{AWSXRay, ThreadLocalStorage}
 import com.gilt.gfc.concurrent.SameThreadExecutionContext
-import io.grhodes.handy.tracing.xray.DynamicPlaySegmentNamingStrategy
+import com.gilt.gfc.logging.Loggable
+import io.grhodes.handy.tracing.TracingContextLocal
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
 
-import scala.concurrent.ExecutionContext
 import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.util.control.NonFatal
 
 case class PreFilterSegment(segment: Segment, responseHeader: Option[TraceHeader] = None)
 
-class XRayTraceFilter @Inject() (implicit ec: ExecutionContext) extends EssentialFilter with Loggable {
+class XRayTraceFilter @Inject() () extends EssentialFilter with Loggable {
 
   private val segmentNamingStrategy = DynamicPlaySegmentNamingStrategy(null)
   private val recorder = AWSXRay.getGlobalRecorder
+  private val traceCtx = new TracingContextLocal[TraceableXRay]()
 
   def apply(next: EssentialAction): EssentialAction = new EssentialAction {
     def apply(requestHeader: RequestHeader): Accumulator[ByteString, Result] = {
       val segment = preFilter(requestHeader)
+      traceCtx.set(Some(TraceableXRay(AWSXRay.getThreadLocal)))
       next(
         // TODO Play 2.6 supports attribute objects, remove serialization
         requestHeader.withTag("com.amazonaws.xray.entities.Entity", segment.segment.serialize())
       ).map { result =>
-        val resultWithHeaders = segment match {
-          case PreFilterSegment(_, Some(responseHeader)) => result.withHeaders("X-Amzn-Trace-Id" -> responseHeader.toString)
-          case _ => result
+        try {
+          val resultWithHeaders = segment match {
+            case PreFilterSegment(_, Some(responseHeader)) => result.withHeaders("X-Amzn-Trace-Id" -> responseHeader.toString)
+            case _ => result
+          }
+          postFilter(requestHeader, resultWithHeaders, segment)
+        } finally {
+          traceCtx.clear()
         }
-        postFilter(requestHeader, resultWithHeaders, segment)
       }(SameThreadExecutionContext)
     }
   }

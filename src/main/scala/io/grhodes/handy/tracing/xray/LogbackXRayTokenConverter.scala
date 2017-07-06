@@ -1,4 +1,4 @@
-package io.grhodes.handy.tracing.logback
+package io.grhodes.handy.tracing.xray
 
 import ch.qos.logback.classic.pattern.ClassicConverter
 import ch.qos.logback.classic.spi.ILoggingEvent
