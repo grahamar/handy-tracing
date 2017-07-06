@@ -1,6 +1,6 @@
-package com.teambytes.handy.tracing.instrumentation
+package io.grhodes.handy.tracing.instrumentation
 
-import com.teambytes.handy.tracing.{Tracer, TraceContextAware}
+import io.grhodes.handy.tracing.{Tracer, TraceContextAware}
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation._
 

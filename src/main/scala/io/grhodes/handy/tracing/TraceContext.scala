@@ -1,4 +1,4 @@
-package com.teambytes.handy.tracing
+package io.grhodes.handy.tracing
 
 import java.io.ObjectStreamException
 
