@@ -1,5 +1,7 @@
 package io.grhodes.handy.tracing
 
+import scala.util.Try
+
 object TracingContextLocal {
   /**
     * Represents the current state of all [[TracingContextLocal locals]] for a given
@@ -21,7 +23,10 @@ object TracingContextLocal {
   /**
     * Restore the Local state to a given Context of values.
     */
-  def restore(saved: Context): Unit = localCtx.set(saved)
+  def restore(saved: Context): Unit = {
+    Try(Option(saved).getOrElse(Array.empty).foreach(_.foreach(_.save())))
+    localCtx.set(saved)
+  }
 
   private def add(): Int = synchronized {
     size += 1
@@ -41,6 +46,7 @@ object TracingContextLocal {
     }
 
     ctx(i) = v
+    Try(v.foreach(_.save()))
     localCtx.set(ctx)
   }
 
@@ -53,14 +59,15 @@ object TracingContextLocal {
     if (v == null) None else v
   }
 
-  private def clear(i: Int): Unit =
-    set(i, None)
+  private def clear(i: Int): Unit = set(i, None)
 
   /**
     * Clear all locals in the current context.
     */
-  def clear(): Unit =
+  def clear(): Unit = {
+    Try(localCtx.get.foreach(_.foreach(_.clear())))
     localCtx.set(null)
+  }
 
   /**
     * Execute a block with the given Locals, restoring current values upon completion.
@@ -138,10 +145,7 @@ final class TracingContextLocal[T <: Traceable] {
   def let[U](value: T)(f: => U): U = {
     val saved = apply()
     set(Some(value))
-    try {
-      value.useThis()
-      f
-    } finally set(saved)
+    try f finally set(saved)
   }
 
   /**

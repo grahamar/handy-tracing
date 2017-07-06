@@ -9,9 +9,13 @@ libraryDependencies ++= Seq(
   "com.gilt" %% "gfc-concurrent" % "0.3.6",
   "com.typesafe.play" %% "play" % "2.5.15" % Provided,
   "ch.qos.logback" % "logback-classic" % "1.2.3" % Provided,
-  "com.amazonaws" % "aws-xray-recorder-sdk-aws-sdk" % "1.1.2" % Provided
+  "com.amazonaws" % "aws-xray-recorder-sdk-aws-sdk" % "1.1.2" % Provided,
+  "org.mockito" % "mockito-all" % "1.10.19" % Test,
+  "com.typesafe.akka" %% "akka-testkit" % "2.4.12" % Test,
+  "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.0-M1" % Test
 )
 
+fork in Test := true
 javacOptions in doc := Seq("-encoding", "UTF-8")
 
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
